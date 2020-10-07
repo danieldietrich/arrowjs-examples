@@ -48,7 +48,7 @@
 
         // Sorting & filtering
         const collator = new Intl.Collator()
-        const compare = (o1, o2) => collator.compare(o1 ?? '', o2 ?? '')
+        const compare = (o1, o2) => collator.compare(o1 === undefined || o1 === null ? '' : o1, o2 === undefined || o2 === null ? '' : o2)
         const sorters = {
           'Party': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.party, p2.party) : compare(p2.party, p1.party),
           'Period': (sortDir) => (p1, p2) => sortDir === 'asc' ? p1.periodStart - p2.periodStart : p2.periodStart - p1.periodStart,
@@ -94,13 +94,16 @@
 
         // Custom hook for setting input field focus
         const useAutofocus = (ref) => {
-          useLayoutEffect(() => ref.current?.focus(), [ref.current])
+          useLayoutEffect(() => {
+            ref.current && ref.current.focus()
+          }, [ref.current])
           return ref
         }
 
         // Custom hook for reading/writing browser's location query parameters
         const useQueryParam = (key, defaultValue) => {
-          const [value, setValue] = useState(new URLSearchParams(location.search).get(key) ?? defaultValue)
+          const param = new URLSearchParams(location.search).get(key)
+          const [value, setValue] = useState(param === null ? defaultValue : param)
           useLayoutEffect(() => {
             const queryParams = new URLSearchParams(location.search);
             queryParams.set(key, value);
