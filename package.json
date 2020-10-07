@@ -3,11 +3,6 @@
   "name": "@danieldietrich/arrowjs-examples",
   "version": "0.0.1",
   "description": "Arrow.js examples",
-  "scripts1": {
-    "build:css": "postcss src/styles.css -o public/presidents-us/styles.css",
-    "build": "NODE_ENV=production npm run build:css",
-    "deploy": "git subtree push --prefix public origin gh-pages"
-  },
   "scripts": {
     "build": "postcss src/styles.css -o public/presidents-us/styles.css",
     "deploy": "cross-env NODE_ENV=production npm run build && git subtree push --prefix public origin gh-pages",
