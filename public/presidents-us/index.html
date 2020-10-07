@@ -52,7 +52,7 @@
         const sorters = {
           'Party': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.party, p2.party) : compare(p2.party, p1.party),
           'Period': (sortDir) => (p1, p2) => sortDir === 'asc' ? p1.periodStart - p2.periodStart : p2.periodStart - p1.periodStart,
-          'Life': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.life, p2.life) : compare(p2.life, p1.life),
+          'Life': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.born, p2.born) : compare(p2.born, p1.born),
           'Name': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.name, p2.name) : compare(p2.name, p1.name),
           'Status': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.status, p2.status) : compare(p2.status, p1.status)
         }
@@ -68,6 +68,7 @@
                 status,
                 desc: p.desc,
                 life,
+                born: p.life[0],
                 period,
                 periodStart: p.period[0],
                 party: p.party,
