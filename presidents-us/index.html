@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Presidents US</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="keywords" content="arrow,arrowjs,arrow.js">
+    <meta name="author" content="Daniel Dietrich">
+    <link rel="stylesheet" href="./styles.css">
+    <!--style>
+      * {
+          animation: flash 500ms ease;
+      }
+      @keyframes flash {
+          from {
+              box-shadow: inset 0 0 2px 2px fuchsia, 0 0 2px 2px fuchsia;
+          }
+      }
+    </style-->
+</head>
+
+<body>
+    <noscript>
+        You need to enable JavaScript to run this app.
+    </noscript>
+    <div class="background"></div>
+    <div id="app"></div>
+    <script type="module">
+        import { assign, comp, html, render, useEffect, useLayoutEffect, useRef, useState } from 'https://unpkg.com/@danieldietrich/arrowjs?module'
+
+        // Ordinal number formatter
+        const nat = (x) => Math.abs(Math.trunc(x))
+        const suffixes = ['th', 'st', 'nd', 'rd',,,,,,,] // v8 optimization wrt HOLEY_ELEMENTS
+        const ordinal = (i) => i + (
+            nat(i % 100 / 10) === 1
+                ? 'th'                          // numbers ending with 11, 12, 13 are exceptions
+                : suffixes[nat(i % 10)] || 'th' // get the string at index 0, 1, 2, 3 or fall back to 'th'
+        )
+
+        // Date formatter
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        const date = (d) => {
+          const [YYYY, MM, DD] = d.split('-')
+          return ordinal(Number(DD)) + " " + months[Number(MM) - 1] + " " + YYYY;
+        }
+
+        // Sorting & filtering
+        const collator = new Intl.Collator()
+        const compare = (o1, o2) => collator.compare(o1 ?? '', o2 ?? '')
+        const sorters = {
+          'Party': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.party, p2.party) : compare(p2.party, p1.party),
+          'Period': (sortDir) => (p1, p2) => sortDir === 'asc' ? p1.periodStart - p2.periodStart : p2.periodStart - p1.periodStart,
+          'Life': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.life, p2.life) : compare(p2.life, p1.life),
+          'Name': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.name, p2.name) : compare(p2.name, p1.name),
+          'Status': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.status, p2.status) : compare(p2.status, p1.status)
+        }
+        const filter = (data, search, sortBy, sortDir) => {
+          const s = search.toLowerCase()
+          return data.map(p => {
+              const period = ordinal(p.no) + " U.S. President (" + p.period.join(" - ") + ")"
+              const life = "\u002a" + date(p.life[0]) + (p.life[1] ? " \u2020" + date(p.life[1]) : "")
+              const status = p.life[2] ? p.life[2] : p.life[1] ? null : p.period[1] ? 'retired' : 'active'
+              return ({
+                no: p.no,
+                name: p.name,
+                status,
+                desc: p.desc,
+                life,
+                period,
+                periodStart: p.period[0],
+                party: p.party,
+                image: p.image,
+                fulltext: [p.name, status, period, p.party, life].join(' ').toLowerCase(),
+                sortBy
+              })
+            }).filter(p => !s || p.fulltext.includes(s)).sort(sorters[sortBy](sortDir))
+        }
+
+        // Custom hook for fetching data
+        const useFetch = (url, initialData) => {
+            const [data, setData] = useState(initialData)
+            useEffect(() => {
+                const ctrl = new AbortController()
+                const fetchData = async () => {
+                    const res = await fetch(url, { signal: ctrl.signal })
+                    setData(await res.json())
+                }
+                return [fetchData, () => ctrl.abort()]
+            }, [])
+            return [data, setData]
+        }
+
+        // Custom hook for setting input field focus
+        const useAutofocus = (ref) => {
+          useLayoutEffect(() => ref.current?.focus(), [ref.current])
+          return ref
+        }
+
+        // Custom hook for reading/writing browser's location query parameters
+        const useQueryParam = (key, defaultValue) => {
+          const [value, setValue] = useState(new URLSearchParams(location.search).get(key) ?? defaultValue)
+          useLayoutEffect(() => {
+            const queryParams = new URLSearchParams(location.search);
+            queryParams.set(key, value);
+            try { history.replaceState(null, null, "?" + queryParams.toString()); } catch (err) {} // ignore security errors
+          }, [value])
+          return [value, setValue]
+        }
+
+        // Status label
+        const statusColors = {
+          null: [null, null],
+          'active': ['bg-green-100', 'text-green-800'],
+          'retired': ['bg-blue-100', 'text-blue-800'],
+          'assassinated': ['bg-red-100', 'text-red-800']
+        }
+        const statusLabel = (status) => status && html`
+          <div class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[status]}">
+            ${status}
+          </div>
+        `
+
+        // Render data of one president
+        const highlight = (sortBy, id) => (sortBy === id) ? 'text-blue-500' : 'text-gray-500'
+        const TableEntry = comp(({ no, name, status, desc, life, period, party, image, sortBy }) => html`
+            <div class="flex items-center bg-white p-3">
+              <div class="flex items-center" style="width: 26em">
+                <img class="h-14 w-14 sm:h-20 sm:w-20 mx-3 sm:mx-6 rounded-full" src="${image}" alt="">
+                <div class="text-left">
+                  <div class="text-lg ${sortBy === 'Name' && 'text-blue-500'} m-1">${name} ${statusLabel(status)}</div>
+                  <div class="text-sm ${highlight(sortBy, 'Period')} m-1">${period}</div>
+                  <div class="text-sm ${highlight(sortBy, 'Party')} m-1">${party}</div>
+                  <div class="text-xs ${highlight(sortBy, 'Life')} m-1">${life}</div>
+                </div>
+              </div>
+              <div class="flex-1 mx-6 hidden md:block text-sm text-gray-500">
+                ${desc}
+              </div>
+            </div>
+        `)
+
+        // Render the whole president table
+        const PresidentTable = comp(() => {
+            const searchRef = useAutofocus(useRef())
+            const [search, setSearch] = useQueryParam('search', '')
+            const [sortBy, setSortBy] = useQueryParam('sort_by', 'Period')
+            const [sortDir, setSortDir] = useQueryParam('sort_dir', 'asc')
+            const [data, setData] = useFetch('./presidents-us.json', [])
+            const [filtered, setFiltered] = useState()
+            useLayoutEffect(() => setFiltered(filter(data, search, sortBy, sortDir)), [data, search, sortBy, sortDir])
+            return html`
+                <div class="bg-white overflow-hidden max-w-screen-lg lg:shadow-2xl lg:rounded-lg lg:mx-auto lg:my-10 divide-y divide-gray-200">
+                  <div class="flex bg-gray-100 px-3 py-5">
+                    <div class="flex relative" style="width: 26em;">
+                      <input ref=${searchRef} class="form-input block w-full ml-3 sm:ml-32 pr-10" placeholder="Search" value=${search} oninput=${(e) => setSearch(e.target.value)}>
+                      <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="flex mx-3 sm:mx-6 items-center relative">
+                      <select aria-label="Sort column" class="form-select focus-within:z-10 h-full rounded-l-md rounded-r-none text-gray-500 text-sm leading-5"
+                              onchange=${(e) => setSortBy(e.target.value)}>
+                        ${['Party', 'Period', 'Life', 'Name', 'Status'].map(item => html`
+                          <option selected=${item === sortBy ? "" : null}>${item}</option>
+                        `)}
+                      </select>
+                      <button class="-ml-px relative inline-flex items-center px-4 h-full border border-gray-300 text-sm leading-5 rounded-r-md text-gray-700 bg-gray-50 hover:text-gray-500 hover:bg-white focus:outline-none focus:shadow-outline-blue focus:border-blue-300 active:bg-gray-100 active:text-gray-700 transition ease-in-out duration-150"
+                              onclick=${() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}>
+                        ${sortDir === 'asc' ? html`
+                          <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M3 3a1 1 0 000 2h11a1 1 0 100-2H3zM3 7a1 1 0 000 2h5a1 1 0 000-2H3zM3 11a1 1 0 100 2h4a1 1 0 100-2H3zM13 16a1 1 0 102 0v-5.586l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 101.414 1.414L13 10.414V16z" />
+                          </svg>
+                        ` : html`
+                          <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M3 3a1 1 0 000 2h11a1 1 0 100-2H3zM3 7a1 1 0 000 2h7a1 1 0 100-2H3zM3 11a1 1 0 100 2h4a1 1 0 100-2H3zM15 8a1 1 0 10-2 0v5.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L15 13.586V8z" />
+                          </svg>
+                        `}
+                      </button>
+                    </div>
+                  </div>
+                  ${filtered ? filtered.map(p => assign({key: p.no}, TableEntry(p))): html`<div class="my-10 text-center">⏳</div>`}
+                  <div class="bg-gray-100">
+                    <div class="py-5 text-center text-gray-400 text-xs">
+                      Copyright 2020
+                      <a class="hover:underline" href="https://twitter.com/danieldietrich" target="_blank">Daniel Dietrich</a>
+                      &middot;
+                      Powered by
+                      <a class="hover:underline" href="https://arrowjs.dev" target="_blank">Arrow.js</a>
+                    </div>
+                  </div>
+                </div>
+            `
+        })
+
+        // Entry point: mount president table to DOM
+        render(PresidentTable(), document.getElementById('app'))
+
+    </script>
+</body>
+
+</html>
