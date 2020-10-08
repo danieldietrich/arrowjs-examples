@@ -94,7 +94,7 @@
         }
 
         // Custom hook for setting input field focus
-        const useAutofocus = (ref) => {
+        const useAutofocus = (ref = useRef()) => {
           useLayoutEffect(() => {
             ref.current && ref.current.focus()
           }, [ref.current])
@@ -115,10 +115,10 @@
 
         // Status label
         const statusColors = {
-          null: [null, null],
-          'active': ['bg-green-100', 'text-green-800'],
-          'retired': ['bg-blue-100', 'text-blue-800'],
-          'assassinated': ['bg-red-100', 'text-red-800']
+          null: null,
+          'active': 'bg-green-100 text-green-800',
+          'retired': 'bg-blue-100 text-blue-800',
+          'assassinated': 'bg-red-100 text-red-800'
         }
         const statusLabel = (status) => status && html`
           <div class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[status]}">
@@ -147,7 +147,7 @@
 
         // Render the whole president table
         const PresidentTable = comp(() => {
-            const searchRef = useAutofocus(useRef())
+            const searchRef = useAutofocus()
             const [search, setSearch] = useQueryParam('search', '')
             const [sortBy, setSortBy] = useQueryParam('sort_by', 'Period')
             const [sortDir, setSortDir] = useQueryParam('sort_dir', 'asc')
@@ -175,7 +175,7 @@
                       <button class="-ml-px relative inline-flex items-center px-4 h-full border border-gray-300 text-sm leading-5 rounded-r-md text-gray-700 bg-gray-50 hover:text-gray-500 hover:bg-white focus:outline-none focus:shadow-outline-blue focus:border-blue-300 active:bg-gray-100 active:text-gray-700 transition ease-in-out duration-150"
                               onclick=${() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}>
                         ${sortDir === 'asc' ? html`
-                          <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                          <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M3 3a1 1 0 000 2h11a1 1 0 100-2H3zM3 7a1 1 0 000 2h5a1 1 0 000-2H3zM3 11a1 1 0 100 2h4a1 1 0 100-2H3zM13 16a1 1 0 102 0v-5.586l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 101.414 1.414L13 10.414V16z" />
                           </svg>
                         ` : html`
