@@ -4,7 +4,8 @@
   "version": "0.0.1",
   "description": "Arrow.js examples",
   "scripts": {
-    "build": "postcss src/styles.css -o public/presidents-us/styles.css",
+    "build": "npm run build:presidents-us",
+    "build:presidents-us": "postcss src/presidents-us/styles.css -o public/presidents-us/styles.css",
     "deploy": "cross-env NODE_ENV=production npm run build && git subtree push --prefix public origin gh-pages",
     "start": "cross-env NODE_ENV=development concurrently \"npm run build -- --watch\"  \"live-server ./public\""
   },
