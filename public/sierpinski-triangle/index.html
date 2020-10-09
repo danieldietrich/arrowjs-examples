@@ -52,7 +52,7 @@
             const [label, setLabel] = useState(num)
             useEffect(() => setLabel(num), [num])
             return html`
-                <svg style="position: absolute; top: ${y}; left: ${x - w2}; width: ${w}; height: ${h}" width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <svg style="position: absolute; top: ${Math.trunc(y)}; left: ${Math.trunc(x - w2)}; width: ${Math.trunc(w)}; height: ${Math.trunc(h)}" viewBox="0 0 100 100" preserveAspectRatio="none">
                   <polygon class="triangle" points="50 0, 100 100, 0 100" vector-effect="non-scaling-stroke" />
                   <text class="triangle-text" x="29" y="72" fill="FloralWhite">${label}</text>
                 </svg>
