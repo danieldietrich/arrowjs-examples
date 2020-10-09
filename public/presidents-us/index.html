@@ -28,7 +28,7 @@
     <div class="background"></div>
     <div id="app"></div>
     <script type="module">
-        import { assign, comp, html, render, useEffect, useLayoutEffect, useRef, useState } from 'https://unpkg.com/@danieldietrich/arrowjs@0.0.2/dist/arrow.esm.js?module'
+        import { assign, comp, html, render, useEffect, useLayoutEffect, useRef, useState } from 'https://unpkg.com/@danieldietrich/arrowjs?module'
 
         // Ordinal number formatter
         const nat = (x) => Math.abs(Math.trunc(x))
@@ -43,7 +43,7 @@
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         const date = (d) => {
           const [YYYY, MM, DD] = d.split('-')
-          return ordinal(Number(DD)) + " " + months[Number(MM) - 1] + " " + YYYY;
+          return ordinal(Number(DD)) + " " + months[Number(MM) - 1] + " " + YYYY
         }
 
         // Sorting & filtering
@@ -106,9 +106,9 @@
           const param = new URLSearchParams(location.search).get(key)
           const [value, setValue] = useState(param === null ? defaultValue : param)
           useLayoutEffect(() => {
-            const queryParams = new URLSearchParams(location.search);
-            queryParams.set(key, value);
-            try { history.replaceState(null, null, "?" + queryParams.toString()); } catch (err) {} // ignore security errors
+            const queryParams = new URLSearchParams(location.search)
+            queryParams.set(key, value)
+            try { history.replaceState(null, null, "?" + queryParams.toString()) } catch (err) {} // ignore security errors
           }, [value])
           return [value, setValue]
         }
@@ -157,7 +157,7 @@
             return html`
                 <div class="bg-white overflow-hidden max-w-screen-lg lg:shadow-2xl lg:rounded-lg lg:mx-auto lg:my-10 divide-y divide-gray-200">
                   <div class="flex bg-gray-100 px-3 py-5">
-                    <div class="flex relative" style="width: 26em;">
+                    <div class="flex relative" style="width: 26em">
                       <input ref=${searchRef} class="form-input block w-full ml-3 sm:ml-32 pr-10" placeholder="Search" value=${search} oninput=${(e) => setSearch(e.target.value)}>
                       <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                         <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
