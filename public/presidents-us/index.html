@@ -2,14 +2,14 @@
 <html lang="en">
 
 <head>
-    <title>Presidents US</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <meta name="keywords" content="arrow,arrowjs,arrow.js">
-    <meta name="author" content="Daniel Dietrich">
-    <link rel="stylesheet" href="./styles.css">
-    <!--style>
+  <title>Presidents US</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="">
+  <meta name="keywords" content="arrow,arrowjs,arrow.js">
+  <meta name="author" content="Daniel Dietrich">
+  <link rel="stylesheet" href="./styles.css">
+  <!--style>
       * {
           animation: flash 500ms ease;
       }
@@ -22,113 +22,113 @@
 </head>
 
 <body>
-    <noscript>
-        You need to enable JavaScript to run this app.
-    </noscript>
-    <div class="background"></div>
-    <div id="app"></div>
-    <script type="module">
-        import { assign, comp, html, render, useEffect, useLayoutEffect, useRef, useState } from 'https://unpkg.com/@danieldietrich/arrowjs?module'
+  <noscript>
+    You need to enable JavaScript to run this app.
+  </noscript>
+  <div class="background"></div>
+  <div id="app"></div>
+  <script type="module">
+    import { assign, comp, html, render, useEffect, useLayoutEffect, useRef, useState } from 'https://unpkg.com/@danieldietrich/arrowjs?module'
 
-        // Ordinal number formatter
-        const nat = (x) => Math.abs(Math.trunc(x))
-        const suffixes = ['th', 'st', 'nd', 'rd',,,,,,,] // v8 optimization wrt HOLEY_ELEMENTS
-        const ordinal = (i) => i + (
-            nat(i % 100 / 10) === 1
-                ? 'th'                          // numbers ending with 11, 12, 13 are exceptions
-                : suffixes[nat(i % 10)] || 'th' // get the string at index 0, 1, 2, 3 or fall back to 'th'
-        )
+    // Ordinal number formatter
+    const nat = (x) => Math.abs(Math.trunc(x))
+    const suffixes = ['th', 'st', 'nd', 'rd', , , , , , ,] // v8 optimization wrt HOLEY_ELEMENTS
+    const ordinal = (i) => i + (
+      nat(i % 100 / 10) === 1
+        ? 'th'                          // numbers ending with 11, 12, 13 are exceptions
+        : suffixes[nat(i % 10)] || 'th' // get the string at index 0, 1, 2, 3 or fall back to 'th'
+    )
 
-        // Date formatter
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        const date = (d) => {
-          const [YYYY, MM, DD] = d.split('-')
-          return ordinal(Number(DD)) + " " + months[Number(MM) - 1] + " " + YYYY
-        }
+    // Date formatter
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const date = (d) => {
+      const [YYYY, MM, DD] = d.split('-')
+      return ordinal(Number(DD)) + " " + months[Number(MM) - 1] + " " + YYYY
+    }
 
-        // Sorting & filtering
-        const collator = new Intl.Collator()
-        const compare = (o1, o2) => collator.compare(o1 === undefined || o1 === null ? '' : o1, o2 === undefined || o2 === null ? '' : o2)
-        const sorters = {
-          'Party': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.party, p2.party) : compare(p2.party, p1.party),
-          'Period': (sortDir) => (p1, p2) => sortDir === 'asc' ? p1.periodStart - p2.periodStart : p2.periodStart - p1.periodStart,
-          'Life': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.born, p2.born) : compare(p2.born, p1.born),
-          'Name': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.name, p2.name) : compare(p2.name, p1.name),
-          'Status': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.status, p2.status) : compare(p2.status, p1.status)
-        }
-        const filter = (data, search, sortBy, sortDir) => {
-          const s = search.toLowerCase()
-          return data.map(p => {
-              const period = ordinal(p.no) + " U.S. President (" + p.period.join(" - ") + ")"
-              const life = "\u002a" + date(p.life[0]) + (p.life[1] ? " \u2020" + date(p.life[1]) : "")
-              const status = p.life[2] ? p.life[2] : p.life[1] ? null : p.period[1] ? 'retired' : 'active'
-              return ({
-                no: p.no,
-                name: p.name,
-                status,
-                desc: p.desc,
-                life,
-                born: p.life[0],
-                period,
-                periodStart: p.period[0],
-                party: p.party,
-                image: p.image,
-                fulltext: [p.name, status, period, p.party, life].join(' ').toLowerCase(),
-                sortBy
-              })
-            }).filter(p => !s || p.fulltext.includes(s)).sort(sorters[sortBy](sortDir))
-        }
+    // Sorting & filtering
+    const collator = new Intl.Collator()
+    const compare = (o1, o2) => collator.compare(o1 === undefined || o1 === null ? '' : o1, o2 === undefined || o2 === null ? '' : o2)
+    const sorters = {
+      'Party': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.party, p2.party) : compare(p2.party, p1.party),
+      'Period': (sortDir) => (p1, p2) => sortDir === 'asc' ? p1.periodStart - p2.periodStart : p2.periodStart - p1.periodStart,
+      'Life': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.born, p2.born) : compare(p2.born, p1.born),
+      'Name': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.name, p2.name) : compare(p2.name, p1.name),
+      'Status': (sortDir) => (p1, p2) => sortDir === 'asc' ? compare(p1.status, p2.status) : compare(p2.status, p1.status)
+    }
+    const filter = (data, search, sortBy, sortDir) => {
+      const s = search.toLowerCase()
+      return data.map(p => {
+        const period = ordinal(p.no) + " U.S. President (" + p.period.join(" - ") + ")"
+        const life = "\u002a" + date(p.life[0]) + (p.life[1] ? " \u2020" + date(p.life[1]) : "")
+        const status = p.life[2] ? p.life[2] : p.life[1] ? null : p.period[1] ? 'retired' : 'active'
+        return ({
+          no: p.no,
+          name: p.name,
+          status,
+          desc: p.desc,
+          life,
+          born: p.life[0],
+          period,
+          periodStart: p.period[0],
+          party: p.party,
+          image: p.image,
+          fulltext: [p.name, status, period, p.party, life].join(' ').toLowerCase(),
+          sortBy
+        })
+      }).filter(p => !s || p.fulltext.includes(s)).sort(sorters[sortBy](sortDir))
+    }
 
-        // Custom hook for fetching data
-        const useFetch = (url, initialData) => {
-            const [data, setData] = useState(initialData)
-            useEffect(() => {
-                const ctrl = new AbortController()
-                const fetchData = async () => {
-                    const res = await fetch(url, { signal: ctrl.signal })
-                    setData(await res.json())
-                }
-                return [fetchData, () => ctrl.abort()]
-            }, [])
-            return [data, setData]
+    // Custom hook for fetching data
+    const useFetch = (url, initialData) => {
+      const [data, setData] = useState(initialData)
+      useEffect(() => {
+        const ctrl = new AbortController()
+        const fetchData = async () => {
+          const res = await fetch(url, { signal: ctrl.signal })
+          setData(await res.json())
         }
+        return [fetchData, () => ctrl.abort()]
+      }, [])
+      return [data, setData]
+    }
 
-        // Custom hook for setting input field focus
-        const useAutofocus = (ref = useRef()) => {
-          useLayoutEffect(() => {
-            ref.current && ref.current.focus()
-          }, [ref.current])
-          return ref
-        }
+    // Custom hook for setting input field focus
+    const useAutofocus = (ref = useRef()) => {
+      useLayoutEffect(() => {
+        ref.current && ref.current.focus()
+      }, [ref.current])
+      return ref
+    }
 
-        // Custom hook for reading/writing browser's location query parameters
-        const useQueryParam = (key, defaultValue) => {
-          const param = new URLSearchParams(location.search).get(key)
-          const [value, setValue] = useState(param === null ? defaultValue : param)
-          useLayoutEffect(() => {
-            const queryParams = new URLSearchParams(location.search)
-            queryParams.set(key, value)
-            try { history.replaceState(null, null, "?" + queryParams.toString()) } catch (err) {} // ignore security errors
-          }, [value])
-          return [value, setValue]
-        }
+    // Custom hook for reading/writing browser's location query parameters
+    const useQueryParam = (key, defaultValue) => {
+      const param = new URLSearchParams(location.search).get(key)
+      const [value, setValue] = useState(param === null ? defaultValue : param)
+      useLayoutEffect(() => {
+        const queryParams = new URLSearchParams(location.search)
+        queryParams.set(key, value)
+        try { history.replaceState(null, null, "?" + queryParams.toString()) } catch (err) { } // ignore security errors
+      }, [value])
+      return [value, setValue]
+    }
 
-        // Status label
-        const statusColors = {
-          null: null,
-          'active': 'bg-green-100 text-green-800',
-          'retired': 'bg-blue-100 text-blue-800',
-          'assassinated': 'bg-red-100 text-red-800'
-        }
-        const statusLabel = (status) => status && html`
+    // Status label
+    const statusColors = {
+      null: null,
+      'active': 'bg-green-100 text-green-800',
+      'retired': 'bg-blue-100 text-blue-800',
+      'assassinated': 'bg-red-100 text-red-800'
+    }
+    const statusLabel = (status) => status && html`
           <div class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[status]}">
             ${status}
           </div>
         `
 
-        // Render data of one president
-        const highlight = (sortBy, id) => (sortBy === id) ? 'text-blue-500' : 'text-gray-500'
-        const TableEntry = comp(({ no, name, status, desc, life, period, party, image, sortBy }) => html`
+    // Render data of one president
+    const highlight = (sortBy, id) => (sortBy === id) ? 'text-blue-500' : 'text-gray-500'
+    const TableEntry = comp(({ no, name, status, desc, life, period, party, image, sortBy }) => html`
             <div class="flex items-center bg-white p-3">
               <div class="flex items-center" style="width: 26em">
                 <img class="h-14 w-14 sm:h-20 sm:w-20 mx-3 sm:mx-6 rounded-full" src="${image}" alt="">
@@ -145,16 +145,16 @@
             </div>
         `)
 
-        // Render the whole president table
-        const PresidentTable = comp(() => {
-            const searchRef = useAutofocus()
-            const [search, setSearch] = useQueryParam('search', '')
-            const [sortBy, setSortBy] = useQueryParam('sort_by', 'Period')
-            const [sortDir, setSortDir] = useQueryParam('sort_dir', 'asc')
-            const [data, setData] = useFetch('./presidents-us.json', [])
-            const [filtered, setFiltered] = useState()
-            useLayoutEffect(() => setFiltered(filter(data, search, sortBy, sortDir)), [data, search, sortBy, sortDir])
-            return html`
+    // Render the whole president table
+    const PresidentTable = comp(() => {
+      const searchRef = useAutofocus()
+      const [search, setSearch] = useQueryParam('search', '')
+      const [sortBy, setSortBy] = useQueryParam('sort_by', 'Period')
+      const [sortDir, setSortDir] = useQueryParam('sort_dir', 'asc')
+      const [data, setData] = useFetch('./presidents-us.json', [])
+      const [filtered, setFiltered] = useState()
+      useLayoutEffect(() => setFiltered(filter(data, search, sortBy, sortDir)), [data, search, sortBy, sortDir])
+      return html`
                 <div class="bg-white overflow-hidden max-w-screen-lg lg:shadow-2xl lg:rounded-lg lg:mx-auto lg:my-10 divide-y divide-gray-200">
                   <div class="flex bg-gray-100 px-3 py-5">
                     <div class="flex relative" style="width: 26em">
@@ -186,7 +186,7 @@
                       </button>
                     </div>
                   </div>
-                  ${filtered ? filtered.map(p => assign({key: p.no}, TableEntry(p))): html`<div class="my-10 text-center">⏳</div>`}
+                  ${filtered ? filtered.map(p => assign({ key: p.no }, TableEntry(p))) : html`<div class="my-10 text-center">⏳</div>`}
                   <div class="bg-gray-100">
                     <div class="py-5 text-center text-gray-400 text-xs">
                       Copyright 2020
@@ -198,12 +198,12 @@
                   </div>
                 </div>
             `
-        })
+    })
 
-        // Entry point: mount president table to DOM
-        render(PresidentTable(), document.getElementById('app'))
+    // Entry point: mount president table to DOM
+    render(PresidentTable(), document.getElementById('app'))
 
-    </script>
+  </script>
 </body>
 
 </html>
