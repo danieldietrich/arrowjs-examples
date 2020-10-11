@@ -28,24 +28,7 @@
     <div id="background"></div>
     <div id="app"></div>
     <script type="module">
-        import { comp, html, render, useEffect, useLayoutEffect, useRef, useState } from 'https://unpkg.com/@danieldietrich/arrowjs?module'
-
-        // Custom hook for fetching data
-        const useFetch = (url, options = {}) => {
-            const { initialData, extractor } = options
-            const [data, setData] = useState(initialData)
-            useEffect(() => {
-                const ctrl = new AbortController()
-                const fetchData = async () => {
-                    const res = await fetch(url, { signal: ctrl.signal })
-                    const json = await res.json()
-                    console.log(json)
-                    setData(extractor ? extractor(json) : json)
-                }
-                return [fetchData, () => ctrl.abort()]
-            }, [])
-            return [data, setData]
-        }
+        import { comp, html, render, useEffect, useLayoutEffect, useRef, useState } from 'https://unpkg.com/@danieldietrich/arrowjs@0.0.4/dist/arrow.esm.js'
 
         // custom hook that provides { width, height } of the window
         const useWindowSize = () => {
@@ -107,9 +90,6 @@
           const [depth, setDepth] = useState(4)     // Sierpinski triangle depth
           const [speed, setSpeed] = useState(50)   // the speed slider uses a logarithmic scale for better UX, see below
           const [factor, setFactor] = useState(1)   // shrink factor of triangle width
-          const [version] = useFetch('https://registry.npmjs.org/@danieldietrich/arrowjs', {
-            extractor: (json) => json['dist-tags'].latest
-          })
           const stats = useRef({
             fps: 60,
             millis: Date.now(),
@@ -138,7 +118,7 @@
               <div id="stats">
                 <div class="lib">
                   <span class="lib-name">Arrow</span>
-                  <span class="lib-version">${version}</span>
+                  <span class="lib-version">0.0.4</span>
                 </div>
                 <div class="fps">${stats.current.fps} fps</div>
                 <div class="stat">${width} x ${height} px</div>
