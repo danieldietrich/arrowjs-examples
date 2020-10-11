@@ -28,7 +28,24 @@
     <div id="background"></div>
     <div id="app"></div>
     <script type="module">
-        import { comp, html, render, useEffect, useLayoutEffect, useState } from 'https://unpkg.com/@danieldietrich/arrowjs?module'
+        import { comp, html, render, useEffect, useLayoutEffect, useRef, useState } from 'https://unpkg.com/@danieldietrich/arrowjs?module'
+
+        // Custom hook for fetching data
+        const useFetch = (url, options = {}) => {
+            const { initialData, extractor } = options
+            const [data, setData] = useState(initialData)
+            useEffect(() => {
+                const ctrl = new AbortController()
+                const fetchData = async () => {
+                    const res = await fetch(url, { signal: ctrl.signal })
+                    const json = await res.json()
+                    console.log(json)
+                    setData(extractor ? extractor(json) : json)
+                }
+                return [fetchData, () => ctrl.abort()]
+            }, [])
+            return [data, setData]
+        }
 
         // custom hook that provides { width, height } of the window
         const useWindowSize = () => {
@@ -83,50 +100,61 @@
         // schedules a computation with a Promise if available, otherwise falls back to setTimeout
         const schedule = typeof Promise === 'function' ? Promise.resolve().then.bind(Promise.resolve()) : setTimeout
 
-        // frames per seconds accumulator for stable numbers
-        let fpsAcc = 0, fpsCount = 0
-
         // Render the whole president table
         const SierpinskiTriangle = comp(() => {
 
           const { width, height } = useWindowSize() // we react to browser window size changes
-          const [depth, setDepth] = useState(5)     // Sierpinski triangle depth
-          const [speed, setSpeed] = useState(100)   // the speed slider uses a logarithmic scale for better UX, see below
+          const [depth, setDepth] = useState(4)     // Sierpinski triangle depth
+          const [speed, setSpeed] = useState(50)   // the speed slider uses a logarithmic scale for better UX, see below
           const [factor, setFactor] = useState(1)   // shrink factor of triangle width
-          const [millis, setMillis] = useState(0)   // Date.now() of last render
-          const [fps, setFps] = useState(0)         // frames per seconds
+          const [version] = useFetch('https://registry.npmjs.org/@danieldietrich/arrowjs', {
+            extractor: (json) => json['dist-tags'].latest
+          })
+          const stats = useRef({
+            fps: 60,
+            millis: Date.now(),
+            renders: 0
+          })
           const components = Math.trunc((1 - Math.pow(3, Math.trunc(depth) + 1)) / (1 - 3)) // we have Sum_0..n(3^n) components, see https://en.wikipedia.org/wiki/Geometric_series
 
           // Animation loop by deferring state changes (here: setFactor), which perform a new component render.
           // Internally, each render is done on the browsers animation frame (requestAnimationFrame()), which runs every 16 ms (= 60 fps)
-          useEffect(() => {
+          useLayoutEffect(() => {
             schedule(() => {
+              const { current } = stats
               const now = Date.now()
-              fpsAcc += 1000 / (now - millis)
-              if (++fpsCount >= 8) {
-                setFps(Math.trunc(fpsAcc / fpsCount))
-                fpsAcc = fpsCount = 0
+              current.renders++
+              if (now - current.millis >= 1000) {
+                current.millis = now
+                current.fps = current.renders
+                current.renders = 0
               }
-              setMillis(now)
-              setFactor(ease((now / speed) % 100 / 100))
+              const nextFactor = ease((now / speed) % 100 / 100)
+              setFactor(prevFactor => (prevFactor === nextFactor) ? nextFactor + 1e-9 : nextFactor) // prevent animation stop
             })
-          }, [factor])
-          
+          }, [factor]) // eslint-disable-line react-hooks/exhaustive-deps
+
           return html`
               <div id="stats">
-                <div class="fps">${fps} fps</div>
+                <div class="lib">
+                  <span class="lib-name">Arrow</span>
+                  <span class="lib-version">${version}</span>
+                </div>
+                <div class="fps">${stats.current.fps} fps</div>
                 <div class="stat">${width} x ${height} px</div>
                 <div class="stat">${numerus(components, 'component')}</div>
                 <div class="stat">${numerus(components * 3, 'node')}</div>
               </div>
               <div id="controls">
                 <div class="control">
-                  <label for="depth">Depth</label>
-                  <input id="depth" type="range" min="0" max="7" step="1" value="${depth}" oninput=${(e) => setDepth(e.target.value)}></input>
+                  <div class="control-label">Depth</div>
+                  <div class="control-value">${depth}</div>
+                  <input class="control-range" type="range" min="0" max="8" step="1" value="${depth}" oninput=${(e) => setDepth(e.target.value)}></input>
                 </div>
                 <div class="control">
-                  <label for="speed">Speed</label>
-                  <input id="speed" type="range" min="1" max="100" step="1" value="${101 - pow_exp(speed, 1.08)}" oninput=${(e) => setSpeed(Math.pow(1.08, 101 - e.target.value))}></input>
+                  <div class="control-label">Speed</div>
+                  <div class="control-value">${Math.round(101 - pow_exp(speed, 1.08))}</div>
+                  <input class="control-range" type="range" min="1" max="100" step="1" value="${101 - pow_exp(speed, 1.08)}" oninput=${(e) => setSpeed(Math.pow(1.08, 101 - e.target.value))}></input>
                 </div>
               </div>
               <div id="triangle">
