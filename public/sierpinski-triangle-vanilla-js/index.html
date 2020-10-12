@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Sierpinski Triangle VanillaJS</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="keywords" content="arrow,arrowjs,sierpinski,triangle">
+    <meta name="author" content="Daniel Dietrich">
+    <link rel="stylesheet" href="./styles.css">
+    <!--style>
+      * {
+          animation: flash 500ms ease;
+      }
+      @keyframes flash {
+          from {
+              box-shadow: inset 0 0 2px 2px fuchsia, 0 0 2px 2px fuchsia;
+          }
+      }
+    </style-->
+</head>
+
+<body>
+    <noscript>
+        You need to enable JavaScript to run this app.
+    </noscript>
+    <div id="background"></div>
+    <div id="app"></div>
+    <script type="module">
+
+      // VanillaJS v1.0
+      // Released into the Public Domain
+      // Your code goes here:
+
+      const triangleTemplate = createTriangleTemplate()
+
+      function createTriangleTemplate() {
+        const element = document.createElement('template')
+        element.innerHTML = `
+          <svg style="position: absolute" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <polygon class="triangle" points="50 0, 100 100, 0 100" vector-effect="non-scaling-stroke" />
+            <text class="triangle-text" x="29" y="72" fill="FloralWhite"></text>
+          </svg>
+        `
+        return element.content
+      }
+
+      function createPage() {
+        const element = document.createElement('template')
+        element.innerHTML = `
+          <div id="stats">
+            <div class="lib">
+              <span class="lib-name">VanillaJS</span>
+              <span class="lib-version">1.0</span>
+            </div>
+            <div id="stat-fps" class="fps"></div>
+            <div id="stat-dim" class="stat"></div>
+            <div id="stat-comps" class="stat"></div>
+            <div id="stat-nodes" class="stat"></div>
+          </div>
+          <div id="controls">
+            <div class="control">
+              <div class="control-label">Depth</div>
+              <div id="depth-value" class="control-value"></div>
+              <input id="depth-input" class="control-range" type="range" min="0" max="8" step="1" value=""></input>
+            </div>
+            <div class="control">
+              <div class="control-label">Speed</div>
+              <div id="speed-value" class="control-value"></div>
+              <input id="speed-input" class="control-range" type="range" min="1" max="100" step="1" value=""></input>
+            </div>
+          </div>
+          <div id="triangle">
+          </div>
+        `
+        return element.content
+      }
+
+      function createTriangles(triangleElem, depth) {
+        let length = Math.pow(3, depth)
+        const triangles = new Array(length)
+        while (length-- > 0) triangles[length] = triangleTemplate.cloneNode(true).querySelector('svg')
+        triangleElem.innerHTML = ''
+        for (triangle of triangles) {
+          triangleElem.appendChild(triangle)
+        }
+        return triangles
+      }
+
+      function renderTriangles(triangles, index, depth, label, x, y, w, h) {
+        const dy = Math.sin(Math.PI / 2)
+        function _renderTriangles(depth, x, y, w, h) {
+          const w2 = w / 2
+          if (depth <= 0) {
+            const triangle = triangles[index++]
+            const { style } = triangle
+            style.top = Math.trunc(y) + 'px'
+            style.left = Math.trunc(x - w2) + 'px'
+            style.width = Math.trunc(w) + 'px'
+            style.height = Math.trunc(h) + 'px'
+            triangle.querySelector('text').innerHTML = label
+          } else {
+            const w4 = w / 4, h2 = h / 2
+            depth--
+            _renderTriangles(depth, x, y, w2, h2)
+            _renderTriangles(depth, x - w4, y + dy * h2, w2, h2)
+            _renderTriangles(depth, x + w4, y + dy * h2, w2, h2)
+          }
+        }
+        _renderTriangles(depth, x, y, w, h)
+      }
+
+      function createScene(container) {
+
+        // singular for i = 1 otherwise plural
+        const numerus = (i, s) => String(i) + ' ' + (i <= 1 ? s : s + 's')
+
+        // computes x, y, shrinked width and height given full width, height and a factor
+        const computeSize = (w, h, f) => ({ x: w / 2, y: 0, w: w * f, h })
+
+        // a sinus based movement, in: [0..1], out: [0..1]
+        const ease = t => (Math.sin(Math.PI * 2 * t) + 1) / 2
+
+        // power: x ^ y = z, power exponent: y = ln z / ln x, see https://math.stackexchange.com/a/1125315/834229
+        const pow_exp = (z, x) => Math.log(z) / Math.log(x)
+
+        // schedules a computation with a Promise if available, otherwise falls back to setTimeout
+        const schedule = typeof Promise === 'function' ? Promise.resolve().then.bind(Promise.resolve()) : setTimeout
+
+        // DOM
+        const page = createPage();
+        const statFpsElem = page.querySelector('#stat-fps')
+        const statDimElem = page.querySelector('#stat-dim')
+        const statCompsElem = page.querySelector('#stat-comps')
+        const statNodesElem = page.querySelector('#stat-nodes')
+        const depthValueElem = page.querySelector('#depth-value')
+        const depthInputElem = page.querySelector('#depth-input')
+        const speedValueElem = page.querySelector('#speed-value')
+        const speedInputElem = page.querySelector('#speed-input')
+        const triangleElem = page.querySelector('#triangle')
+
+        container.innerHTML = ''
+        container.append(page)
+
+        // state
+        const state = {
+          width: 0,           // window width
+          height: 0,          // window height
+          depth: 4,           // Sierpinski triangle depth
+          speed: 50,          // the speed slider uses a logarithmic scale for better UX, see below
+          factor: 1,          // shrink factor of triangle width
+          fps: 60,            // frames per second
+          millis: Date.now(), // timestamp of last render
+          renders: 0,         // render calls until next fps update
+          triangles: createTriangles(triangleElem, 4)
+        }
+
+        const animate = () => {
+
+          const now = Date.now()
+          const components = Math.trunc((1 - Math.pow(3, Math.trunc(state.depth) + 1)) / (1 - 3)) // we have Sum_0..n(3^n) components, see https://en.wikipedia.org/wiki/Geometric_series
+          state.renders++
+          if (now - state.millis >= 1000) {
+            state.millis = now
+            state.fps = state.renders
+            state.renders = 0
+          }
+          state.factor = ease((now / state.speed) % 100 / 100)
+
+          statFpsElem.innerText = state.fps + " fps"
+          statDimElem.innerText = state.width + " x " + state.height + " px"
+          statCompsElem.innerText = numerus(components, 'component')
+          statNodesElem.innerText = numerus(components * 3, 'node')
+          depthValueElem.innerText = state.depth
+          depthInputElem.setAttribute('value', state.depth)
+          speedValueElem.innerText = Math.round(101 - pow_exp(state.speed, 1.08))
+          speedInputElem.setAttribute('value', 101 - pow_exp(state.speed, 1.08))
+
+          if (state.width * state.height > 0) {
+            const size = computeSize(state.width, state.height, state.factor)
+            renderTriangles(state.triangles, 0, state.depth, Math.trunc(state.factor * 100), size.x, size.y, size.w, size.h)
+          }
+
+          schedule(() => requestAnimationFrame(() => animate()))
+
+        }
+
+        depthInputElem.addEventListener('input', (e) => {
+          const depth = e.target.value;
+          const fragment = document.createDocumentFragment()
+          const triangles = createTriangles(fragment, depth)
+          requestAnimationFrame(() => {
+            state.depth = depth
+            state.triangles = triangles
+            triangleElem.innerHTML = ''
+            triangleElem.append(fragment)
+          })
+        })
+        speedInputElem.addEventListener('input', (e) => {
+          state.speed = Math.pow(1.08, 101 - e.target.value);
+        })
+
+        // start animation
+        animate()
+
+        return state
+
+      }
+
+      // render initial DOM
+      const state = createScene(document.getElementById('app'))
+      state.width = window.innerWidth
+      state.height = window.innerHeight
+
+      window.addEventListener("resize", () => { state.width = window.innerWidth; state.height = window.innerHeight })
+
+    </script>
+</body>
+
+</html>
